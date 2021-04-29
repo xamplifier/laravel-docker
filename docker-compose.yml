@@ -1,0 +1,96 @@
+version: '3.7'
+
+services: 
+  app:
+    container_name: app
+    build:
+      context: docker-images/app
+      args:
+        UID: '${UID}'
+        GID: '${GID}'
+    image: laravel-app  
+    volumes:
+      - "./data/app/${APP_FOLDER}:/var/www" 
+      - "./docker-images/app/config/php.ini:/usr/local/etc/php/conf.d/php.ini"  
+    networks: 
+      - laravel-net
+    depends_on: 
+      - dbserver
+      - redis
+  webserver:
+    container_name: webserver
+    build:
+      context: docker-images/nginx
+      args:
+        UID: '${UID}'
+        GID: '${GID}'
+    image: laravel-nginx
+    ports:
+      - "${FORWARD_WEBSERVER_PORT}:80"  
+    volumes:
+      - "./data/app/${APP_FOLDER}:/var/www"  
+      - "./docker-images/nginx/config:/etc/nginx/conf.d/"
+    networks: 
+      - laravel-net
+    depends_on: 
+      - app
+      - dbserver
+      - redis    
+  dbserver:
+    container_name: '${DB_HOST}'
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_ROOT_PASSWORD: '${DB_ROOT_PASSWORD}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+
+    ports:
+      - "${FORWARD_DB_PORT}:3306"
+    volumes:
+      - "dbdata:/var/lib/mysql"
+      - "./docker-images/mysql/config/my.cnf:/etc/mysql/conf.d/my.cnf"  
+    networks: 
+      - laravel-net  
+  redis:
+    container_name: redis
+    image: redis:6.2.1
+    ports:
+      - '${FORWARD_REDIS_PORT}:6379'
+    volumes:
+      - 'redisdata:/data'
+    networks:
+      - laravel-net
+
+  mongo:
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: '${MONGODB_USER}'
+      MONGO_INITDB_ROOT_PASSWORD: '${MONGODB_PASSWORD}'
+    volumes:
+      - "mongodata:/data/db"
+    ports:
+      - "27017:27017"
+
+  node:
+    image: "node:14.16.1"
+    user: "node"
+    working_dir: /home/node/app
+
+    volumes:
+      -  "./data/app/${APP_FOLDER}:/home/node/app"
+    expose:
+      - "3300"
+    command: sh -c "npm install && npm run dev && npm run serve"
+
+networks:
+  laravel-net:
+    driver: bridge
+volumes:
+  dbdata:
+    driver: local
+  redisdata:
+    driver: local
+  mongodata:
+    driver: local
