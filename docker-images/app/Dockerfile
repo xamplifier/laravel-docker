@@ -1,11 +1,6 @@
-FROM php:7.4.16-fpm  
-LABEL maintainer="George Dimosthenous"
+FROM php:8.0.2-fpm
 
-# Set working directory
-WORKDIR /var/www
-
-ARG UID
-ARG GID
+LABEL maintainer="Tolis"
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -43,9 +38,11 @@ RUN docker-php-ext-install mysqli \
     && docker-php-ext-install gd \
     && pecl install redis \
     && pecl install mongodb \
+    && pecl install xdebug \
+    && docker-php-ext-enable xdebug \
     && docker-php-ext-enable redis
 
-# strings
+    # strings
 RUN apt-get update \
     && apt-get install -y libonig-dev \
     && docker-php-ext-install -j$(nproc) \
@@ -73,7 +70,5 @@ RUN apt-get update \
 # Install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-RUN usermod -u $UID www-data
-RUN groupmod -g $GID www-data
 
-USER www-data
+WORKDIR /var/www
