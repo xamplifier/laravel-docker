@@ -37,7 +37,7 @@ services:
       - dbserver
       - redis    
   dbserver:
-    container_name: '${DB_HOST}'
+    container_name: MySQL
     image: mysql:8.0
     environment:
       MYSQL_DATABASE: '${DB_DATABASE}'
@@ -74,7 +74,7 @@ services:
       - "27017:27017"
 
   node:
-    image: "node:14.16.1"
+    image: "node:16.15"
     user: "node"
     working_dir: /home/node/app
 
